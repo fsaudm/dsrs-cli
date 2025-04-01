@@ -336,8 +336,13 @@ def _clear_line(event):
 # App main loop                                                                                                        
 # ===================================================================== #                                              
 
-def main():
-    global model, current_system_prompt, client, console, tokenizer
+def main(model, current_system_prompt, client, console, tokenizer):
+
+    model=model
+    current_system_prompt = current_system_prompt
+    client=client
+    console=console
+    tokenizer=tokenizer
     
     chat_history = []
     messages = []
@@ -612,7 +617,8 @@ if __name__ == "__main__":
     # --- Run main() ONLY if setup was successful ---                                                                      
     if setup_successful:                                                                                                   
         try:                                                                                                               
-            main()
+            main(model, current_system_prompt, client, console, tokenizer)
+            
         except KeyboardInterrupt:
             pass
         except Exception as e:                                                                                             
