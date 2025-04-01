@@ -1,8 +1,7 @@
 # DSRS CLI Chat 🚀                                                                                                         
                                                                                                                          
 A lightweight, feature-rich, interactive AI chatbot for your command line, powered by OpenAI-compatible APIs.                           
-                                                                                                                         
-![Screenshot Placeholder](placeholder.png) <!-- Replace placeholder.png with an actual screenshot if you have one -->      
+
                                                                                                                          
 ## Features                                                                                                                
                                                                                                                          
