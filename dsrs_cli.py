@@ -330,107 +330,22 @@ def _clear_line(event):
 
 
 
-# ===================================================================== #                                              
-# Setup                                                                                                                
-# ===================================================================== #                                              
-console = Console()
-                                                                                                                     
-console.clear()
-console.print(ASCII)
-                                                                                                                     
-tokenizer = tiktoken.get_encoding("o200k_base")
-                                                                                                                     
-# --- Load KEY & BASE_URL from environment variables or a config file ---                                              
-openai_api_key = ""
-base_url = ""
-use_env = False  # Default
-                                                                                                                     
-try:  # Wrap initial setup in try/except for Ctrl+C
-    # --- Use prompt_toolkit confirm ---                                                                                 
-    use_env = confirm("Load API Key and Base URL from .env file?")
-                                                                                                                     
-    if use_env:
-        console.print("[dim]Loading credentials from .env file...[/dim]")
-        load_dotenv()
-        openai_api_key = os.getenv("OPENAI_API_KEY", "")
-        base_url = os.getenv("BASE_URL", "")
-                                                                                                                     
-        if not openai_api_key:
-            console.print("[red]Warning: OPENAI_API_KEY not found in .env file.[/red]")
-        if not base_url:
-            console.print("[red]Warning: BASE_URL not found in .env file.[/red]")
-    else:
-        console.print("\n[dim]Please enter your credentials manually:")
-        # --- Use prompt_toolkit for manual input ---                                                                    
-        not_empty_validator = NotEmptyValidator()
-                                                                                                                     
-        while not openai_api_key:
-            openai_api_key = prompt(
-                "OPENAI_API_KEY: ",
-                is_password=True,  # Hide input
-                validator=not_empty_validator,
-                validate_while_typing=False  # Validate only on Enter
-            )
-            # Strip potential quotes the user might paste                                                                
-            openai_api_key = openai_api_key.strip().strip("'\"")
-                                                                                                                     
-        while not base_url:
-            base_url = prompt(
-                "BASE_URL: ",
-                validator=not_empty_validator,
-                validate_while_typing=False  # Validate only on Enter
-            )
-            # Strip potential quotes                                                                                     
-            base_url = base_url.strip().strip("'\"")
-                                                                                                                     
-    # --- Check if credentials were successfully obtained ---                                                            
-    if not openai_api_key or not base_url:
-        console.print("[bold red]Error: API Key or Base URL missing or failed to load. Exiting.[/bold red]")
-        sys.exit(1)
-                                                                                                                     
-    # --- Credentials obtained, proceed with using them ---                                                              
-    console.print("[green]Credentials loaded successfully.[/green]")
-                                                                                                                     
-    # --- Global variable for the current model ---                                                                      
-    # Initialize client                                                                                                  
-    model = None
-    client = None
-    # --- NEW: Global variable for the system prompt ---                                                                 
-    current_system_prompt = DEFAULT_SYSTEM_PROMPT
-                                                                                                                     
-    client = OpenAI(
-        api_key=openai_api_key,
-        base_url=base_url,
-    )
-                                                                                                                     
-    # --- Initial Model Selection ---                                                                                    
-    model = select_model(client, console)  # Assign to global 'model'
-    if not model:
-        console.print("[bold red]Failed to select an initial model. Double-check your credentials or try again.[/bold red] \n[dim]Exiting...[/dim]")
-        sys.exit(1)
-                                                                                                                     
-# --- Catch Ctrl+C during initial setup/credential entry ---                                                           
-except KeyboardInterrupt:
-    console.print("\nSetup interrupted by user (Ctrl+C). Exiting.")
-    sys.exit(0)  # Use 0 for user-initiated exit
-# --- Catch other potential setup errors ---                                                                           
-except Exception as e:
-    console.print(f"[bold red]Error during initial setup:[/bold red] {e}")
-    sys.exit(1)
+
                                                                                                                      
 # ===================================================================== #                                              
 # App main loop                                                                                                        
 # ===================================================================== #                                              
-if __name__ == "__main__":
+
+def main():
+    global model, current_system_prompt, client, console, tokenizer
+    
     chat_history = []
-    messages = []  # Holds the *full* message list for the last successful/interrupted generation
-    last_ai_response = ""  # Keep track of the last response for the exit message
-    interrupted_generation = False  # Track if the *last* generation was interrupted
-                                                                                                                     
-    # --- Create history object for chat input ---                                                                       
+    messages = []
+    last_ai_response = ""
+    interrupted_generation = False
     chat_input_history = InMemoryHistory()
-                                                                                                                     
-    # --- Display Welcome/Instructions ---                                                                               
+    
+    # --- Display Welcome/Instructions ---
     console.print(welcome_panel(model))
                                                                                                                      
     while True:
@@ -493,6 +408,7 @@ if __name__ == "__main__":
                 new_model = select_model(client, console)  # Call the function again
                 if new_model:
                     model = new_model
+                    console.clear()
                     console.print(welcome_panel(model))  # Show updated panel
                 elif model:  # Only print error if a model was already selected
                     console.print(f"Model selection cancelled or failed. Continuing with [bold]{model}[/bold].")
@@ -521,7 +437,7 @@ if __name__ == "__main__":
 
                     console.clear()
                     console.print(welcome_panel(model))
-                    console.print("\n[magenta]System Prompt updated:[/magenta]")
+                    console.print("\n[magenta]System Prompt:[/magenta]")
                     console.print(Panel(current_system_prompt.format(model=model), border_style="dim magenta", expand=False))
                     
 
@@ -598,3 +514,121 @@ if __name__ == "__main__":
         console.print("\n[dim]No chat interactions recorded.[/dim]")
                                                                                                                      
     console.print("\n[bold blue]Exiting DSRS CLI Chat. Goodbye! 👋[/bold blue]")
+
+
+
+
+
+
+# ===================================================================== #                                                  
+# Script Execution Guard                                                                                                   
+# ===================================================================== #                                                  
+if __name__ == "__main__":
+                                       
+    console = Console()                                                                                                                     
+    console.clear()
+    console.print(ASCII)                                                                      
+    tokenizer = tiktoken.get_encoding("o200k_base")
+                                                                                                                         
+    openai_api_key = ""
+    base_url = ""
+    use_env = False
+    model = None
+    client = None
+    current_system_prompt = DEFAULT_SYSTEM_PROMPT
+
+    setup_successful = False
+                                                                                                                         
+    try:  # Wrapped initial setup in try/except for Ctrl+C
+        
+        # --- Use prompt_toolkit confirm ---                                                                                 
+        use_env = confirm("Load API Key and Base URL from .env file?")
+                                                                                                                         
+        if use_env:
+            console.print("[dim]Loading credentials from .env file...[/dim]")
+            load_dotenv()
+            openai_api_key = os.getenv("OPENAI_API_KEY", "")
+            base_url = os.getenv("BASE_URL", "")
+                                                                                                                         
+            if not openai_api_key:
+                console.print("[red]Warning: OPENAI_API_KEY not found in .env file.[/red]")
+            if not base_url:
+                console.print("[red]Warning: BASE_URL not found in .env file.[/red]")
+        else:
+            console.print("\n[dim]Please enter your credentials manually:")
+            # --- Use prompt_toolkit for manual input ---                                                                    
+            not_empty_validator = NotEmptyValidator()
+                                                                                                                         
+            while not openai_api_key:
+                openai_api_key = prompt(
+                    "OPENAI_API_KEY: ",
+                    is_password=True,  # Hide input
+                    validator=not_empty_validator,
+                    validate_while_typing=False  # Validate only on Enter
+                )
+                openai_api_key = openai_api_key.strip().strip("'\"")# Strip potential quotes the user might paste
+                
+            while not base_url:
+                base_url = prompt(
+                    "BASE_URL: ",
+                    validator=not_empty_validator,
+                    validate_while_typing=False  # Validate only on Enter
+                )
+                base_url = base_url.strip().strip("'\"") # Strip potential quotes
+                                                                                                                         
+        # --- Check if credentials were successfully obtained ---                                                            
+        if not openai_api_key or not base_url:
+            console.print("[bold red]Error: API Key or Base URL missing or failed to load. Exiting.[/bold red]")
+            sys.exit(1)
+                                                                                                                         
+        # --- Credentials obtained, proceed with using them ---                                                              
+        console.print("[green]Credentials loaded successfully.[/green]")
+        client = OpenAI(
+            api_key=openai_api_key,
+            base_url=base_url,
+        )
+                                                                                                                         
+        # --- Initial Model Selection ---                                                                                    
+        model = select_model(client, console)  # Assign to global 'model'
+        if not model:
+            console.print("[bold red]Failed to select an initial model. Double-check your credentials or try again.[/bold red] \n[dim]Exiting...[/dim]")
+            sys.exit(1)
+
+        # --- Successful setup ---                                                                                    
+        setup_successful = True
+                                                                                                                         
+    # --- Catch Ctrl+C during initial setup/credential entry ---                                                           
+    except KeyboardInterrupt:
+        console.print("\nSetup interrupted by user (Ctrl+C). Exiting.")
+        sys.exit(0)  # Use 0 for user-initiated exit
+    # --- Catch other potential setup errors ---                                                                           
+    except Exception as e:
+        console.print(f"[bold red]Error during initial setup:[/bold red] {e}")
+        sys.exit(1)
+
+
+
+    
+    # --- Run main() ONLY if setup was successful ---                                                                      
+    if setup_successful:                                                                                                   
+        try:                                                                                                               
+            main()
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:                                                                                             
+            # Catch unexpected errors during the main loop                                                                 
+            console.print(f"\n[bold red]An unexpected error occurred in the main loop:[/bold red] {e}")                    
+            # import traceback                                                                                             
+            # traceback.print_exc()                                                                                        
+            sys.exit(1) # Exit with error status                                                                                                                                                               
+
+
+
+
+
+
+
+
+
+
+
